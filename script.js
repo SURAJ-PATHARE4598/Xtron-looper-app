@@ -442,22 +442,22 @@ class Looper {
     const start=Date.now(), self=this; const max=(this.index===1)?60000:(masterLoopDuration? masterLoopDuration*this.divider*1000 : 12000);
     (function anim(){ if (self.state==='recording'){ const pct=(Date.now()-start)/max; self.setRing(Math.min(pct,1)); if (pct<1) requestAnimationFrame(anim); if (pct>=1) self.stopRecordingAndPlay(); }})();
   }
-  async stopRecordingAndPlay(){
-    if (!this.mediaRecorder) return;
-    this.state='playing'; this.updateUI();
-    this.mediaRecorder.onstop = async ()=>{
-      const blob=new Blob(this.chunks,{type:'audio/webm'}); const buf=await blob.arrayBuffer();
-      audioCtx.decodeAudioData(buf, buffer=>{
-        this.loopBuffer=buffer; this.loopDuration=buffer.duration;
-        if (this.index===1){
-          masterLoopDuration=this.loopDuration;
-          masterBPM = Math.round((60/this.loopDuration)*4);
-          masterIsSet=true; bpmLabel.textContent = `BPM: ${masterBPM}`;
-          for (let k=2;k<=4;k++) loopers[k].disable(false);
-          updateDelayFromTempo();
-        }
-        this.startPlayback();
-      });
+    async stopRecordingAndPlay(){
+    if (!this.mediaRecorder) return;
+    this.state='playing'; this.updateUI();
+    this.mediaRecorder.onstop = async ()=>{
+      const blob=new Blob(this.chunks,{type:'audio/webm'}); const buf=await blob.arrayBuffer();
+      audioCtx.decodeAudioData(buf, buffer=>{
+        this.loopBuffer=buffer; this.loopDuration=buffer.duration;
+        if (this.index===1){
+          masterLoopDuration=this.loopDuration;
+          masterBPM = Math.round((60/this.loopDuration)*4);
+          updateDelayFromTempo(); // ADD THIS LINE
+          masterIsSet=true; bpmLabel.textContent = `BPM: ${masterBPM}`;
+          for (let k=2;k<=4;k++) loopers[k].disable(false);
+        }
+        this.startPlayback();
+      });
     };
     this.mediaRecorder.stop();
   }
