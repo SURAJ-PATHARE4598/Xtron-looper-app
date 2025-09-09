@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Groovestation-Pro Sampler</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <h1>Groovestation-Pro</h1>
+    <p class="sub">Load a sample, select a loop, and play it like a synth.</p>
+
+    <!-- File Input Control -->
+    <div class="controls" style="grid-template-columns: 1fr; margin-bottom: 16px;">
+       <div class="control" style="padding: 16px;">
+          <label style="margin-bottom: 12px;">Load Audio Sample</label>
+          <input type="file" id="audioFile" accept="audio/*">
+       </div>
+    </div>
+
+    <!-- Waveform Display and Selection -->
+    <div class="wave-wrap">
+      <canvas id="waveformCanvas"></canvas>
+      <!-- ✅ FIX 2: Add start/end markers for selection -->
+      <div id="markerStart" class="note-marker" style="left:0%;"></div>
+      <div id="markerEnd" class="note-marker" style="left:100%;"></div>
+    </div>
+
+    <!-- Synthesis Controls -->
+    <div class="controls" style="grid-template-columns: repeat(3, 1fr);">
+      <!-- ADSR Envelope Controls -->
+      <div class="control">
+        <label>Attack</label>
+        <input type="range" id="attackSlider" min="0.01" max="2" value="0.05" step="0.01">
+        <small id="attackValue">0.05s</small>
+      </div>
+      <div class="control">
+        <label>Decay</label>
+        <input type="range" id="decaySlider" min="0.01" max="2" value="0.1" step="0.01">
+        <small id="decayValue">0.10s</small>
+      </div>
+      <div class="control">
+        <label>Sustain</label>
+        <input type="range" id="sustainSlider" min="0.01" max="1" value="0.8" step="0.01">
+        <small id="sustainValue">0.80</small>
+      </div>
+      <div class="control">
+        <label>Release</label>
+        <input type="range" id="releaseSlider" min="0.01" max="3" value="0.5" step="0.01">
+        <small id="releaseValue">0.50s</small>
+      </div>
+      <!-- NEW: Filter Controls -->
+      <div class="control">
+        <label>Filter Cutoff</label>
+        <input type="range" id="filterCutoffSlider" min="20" max="20000" value="20000" step="1">
+        <small id="filterCutoffValue">20000 Hz</small>
+      </div>
+      <div class="control">
+        <label>Filter Resonance</label>
+        <input type="range" id="filterResonanceSlider" min="0" max="30" value="0" step="0.1">
+        <small id="filterResonanceValue">0.0</small>
+      </div>
+    </div>
+
+    <!-- Piano Keyboard -->
+    <div id="piano" class="piano">
+      <div class="piano-container">
+        <!-- JS will populate piano keys here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- All application logic is now in main.js -->
+<script type="module" src="main.js"></script>
+
+</body>
+</html>
