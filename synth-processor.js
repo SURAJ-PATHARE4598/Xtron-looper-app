@@ -1,4 +1,4 @@
-// synth-processor.js - corrected version (replace your existing synth-processor.js)
+// synth-processor.js - one-shot version (no echo/looping by default)
 
 const RENDER_QUANTUM = 128; // Standard block size for audio processing
 
@@ -26,7 +26,6 @@ class ADSREnvelope {
   }
 
   noteOff() {
-    // if already in attack or decay, move to release
     this.state = 'release';
   }
 
@@ -47,10 +46,8 @@ class ADSREnvelope {
         }
         break;
       case 'sustain':
-        // Level remains at sustainLevel
         break;
       case 'release':
-        // ramp down based on current level, not just sustain
         this.level -= (this.level) / (this.releaseTime * this.sampleRate);
         if (this.level <= 0.00001) {
           this.level = 0.0;
@@ -109,6 +106,7 @@ class Voice {
 
   process(sampleData, filterCoeffs) {
     if (!this.isActive) return 0.0;
+
     const ptr_int = Math.floor(this.samplePtr);
     const ptr_frac = this.samplePtr - ptr_int;
     const s1 = sampleData[ptr_int] || 0;
@@ -121,8 +119,11 @@ class Voice {
     sampleValue = this.filter.process(sampleValue, ...filterCoeffs);
 
     this.samplePtr += this.pitchFactor;
-    if (this.samplePtr >= this.loopEnd && this.loopEnd > this.loopStart) {
-      this.samplePtr = this.loopStart + (this.samplePtr - this.loopEnd);
+
+    // 🔧 one-shot: stop voice instead of looping
+    if (this.samplePtr >= this.loopEnd) {
+      this.isActive = false;
+      return 0.0;
     }
 
     if (this.envelope.state === 'idle') {
@@ -137,8 +138,7 @@ class SynthProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
     this._isReady = false;
-    this._sampleData = null; // Float32Array
-    this._wasmExports = null;
+    this._sampleData = null;
 
     this.voices = [];
     for (let i = 0; i < 16; i++) {
@@ -173,22 +173,8 @@ class SynthProcessor extends AudioWorkletProcessor {
 
   handleMessage(data) {
     if (!data || !data.type) return;
-    if (data.type === 'init-wasm') {
-      // data.wasmBuffer is an ArrayBuffer transferred from main thread
-      WebAssembly.instantiate(data.wasmBuffer).then(result => {
-        this._wasmExports = result.instance ? result.instance.exports : result.exports;
-        this._isReady = true;
-        this.port.postMessage({ type: 'ready' });
-        this.port.postMessage({ type: 'log', msg: 'WASM instantiated inside worklet.' });
-      }).catch(err => {
-        this.port.postMessage({ type: 'log', msg: 'WASM instantiate failed: ' + err.message });
-        this._isReady = true; // still allow operation without wasm
-        this.port.postMessage({ type: 'ready' });
-      });
-    } else if (data.type === 'load-sample') {
-      // Expect Float32Array posted from main thread (transferred)
+    if (data.type === 'load-sample') {
       this._sampleData = data.sampleData;
-      // ensure typed array
       if (this._sampleData && !(this._sampleData instanceof Float32Array)) {
         this._sampleData = new Float32Array(this._sampleData);
       }
@@ -198,7 +184,6 @@ class SynthProcessor extends AudioWorkletProcessor {
       if (data.name.startsWith('filter')) {
         this.recalculateFilterCoeffs();
       } else {
-        // propagate envelope parameters to voices
         this.voices.forEach(v => v.envelope.setParams(this.params.attack, this.params.decay, this.params.sustain, this.params.release));
       }
     } else if (data.type === 'noteOn') {
@@ -211,15 +196,24 @@ class SynthProcessor extends AudioWorkletProcessor {
     } else if (data.type === 'noteOff') {
       const voice = this.voices.find(v => v.isActive && v.note === data.note);
       if (voice) voice.noteOff();
+    } else if (data.type === 'init-wasm') {
+      // optional WASM init
+      WebAssembly.instantiate(data.wasmBuffer).then(result => {
+        this._wasmExports = result.instance ? result.instance.exports : result.exports;
+        this._isReady = true;
+        this.port.postMessage({ type: 'ready' });
+      }).catch(() => {
+        this._isReady = true;
+        this.port.postMessage({ type: 'ready' });
+      });
     }
   }
 
-  process(inputs, outputs, parameters) {
+  process(inputs, outputs) {
     const output = outputs[0];
     const left = output[0];
     const right = output[1] || output[0];
 
-    // If not ready or no sample loaded, output silence but keep processor alive.
     if (!this._isReady || !this._sampleData) {
       for (let i = 0; i < left.length; i++) {
         left[i] = 0; right[i] = 0;
@@ -227,13 +221,11 @@ class SynthProcessor extends AudioWorkletProcessor {
       return true;
     }
 
-    // process block
     for (let i = 0; i < left.length; i++) {
       let val = 0.0;
       for (const v of this.voices) {
         if (v.isActive) val += v.process(this._sampleData, this.filterCoeffs);
       }
-      // attenuation to avoid clipping; some headroom for polyphony
       const out = Math.max(-1, Math.min(1, val * 0.25));
       left[i] = out;
       right[i] = out;
