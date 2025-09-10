@@ -55,12 +55,14 @@ h1{
   background: linear-gradient(90deg, var(--accent-c), var(--accent-a), var(--accent-b), var(--accent-d));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  text-align: center;
 }
 
 p.sub{
   margin:0 0 14px 0;
   color: var(--muted);
   font-size:14px;
+  text-align: center;
 }
 
 /* waveform / markers */
@@ -73,6 +75,7 @@ p.sub{
   border: 1px solid rgba(255,255,255,0.03);
   overflow:hidden;
   box-shadow: inset 0 4px 40px rgba(0,0,0,0.6);
+  margin-top: 16px;
 }
 
 canvas#waveformCanvas{
@@ -121,7 +124,7 @@ canvas#waveformCanvas{
 }
 
 .white-key{
-  width:12.5%;
+  width:12.5%; /* This will be set by JS based on count */
   height:100%;
   background: linear-gradient(180deg, #fbfbfb, #f0f4ff);
   border: 1px solid rgba(0,0,0,0.08);
@@ -129,7 +132,7 @@ canvas#waveformCanvas{
 }
 
 .black-key{
-  width:8%;
+  width:8%; /* This will be set by JS */
   height:62%;
   background: linear-gradient(180deg, #10131b, #1f2937);
   border:1px solid rgba(255,255,255,0.02);
@@ -152,7 +155,7 @@ canvas#waveformCanvas{
 /* controls grid */
 .controls{
   display:grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap:12px;
   margin-top:16px;
 }
@@ -166,7 +169,7 @@ canvas#waveformCanvas{
   box-shadow: 0 6px 20px rgba(2,6,23,0.5);
 }
 
-.control small{ color:#bcd6ff; }
+.control small{ color:#bcd6ff; margin-left: 8px; }
 
 label{ display:block; font-size:13px; font-weight:600; color: #fbbf24; margin-bottom:8px; }
 
@@ -179,6 +182,7 @@ input[type=file]{
   background: rgba(59,130,246,0.06);
   color: #cfe8ff;
   cursor:pointer;
+  box-sizing: border-box;
 }
 
 /* toast */
@@ -197,52 +201,44 @@ input[type=file]{
 
 /* ============================
    SLIDER STYLING (full)
-   - Uses --pct custom property (0%..100%) to render filled portion
-   - Provide fallback for browsers that prefer pseudo-track
    ============================ */
 
 input[type=range]{
   width:100%;
   -webkit-appearance:none;
   appearance:none;
-  height: 28px;            /* give vertical space for thumb */
+  height: 28px;
   margin: 6px 0;
-  background:
-    linear-gradient(90deg,
-      /* filled gradient */
-      linear-gradient(90deg, var(--accent-c), var(--accent-a), var(--accent-b), var(--accent-d)) no-repeat,
-      /* empty track color */
-      linear-gradient(90deg, var(--track-empty), var(--track-empty))
-    );
-  background-size: var(--pct, 50%) 6px, 100% 6px; /* first layer = filled width, second = full base */
-  background-position: left center, left center;
-  background-repeat: no-repeat;
+  background: var(--track-empty);
   border-radius: 6px;
   outline: none;
   cursor: pointer;
   padding: 0;
   box-sizing: border-box;
+  background-image: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  background-size: var(--pct, 50%) 100%;
+  background-repeat: no-repeat;
 }
 
-/* WebKit track thumb */
-input[type=range]::-webkit-slider-runnable-track{
-  height:6px;
-  background: transparent; /* using element background instead */
-  border-radius:3px;
-}
-
+/* WebKit thumb */
 input[type=range]::-webkit-slider-thumb{
   -webkit-appearance:none;
   appearance:none;
   width:18px;
   height:18px;
-  margin-top: -6px; /* center the thumb over 6px track */
   border-radius:50%;
   background: var(--thumb);
   box-shadow: 0 6px 14px rgba(2,6,23,0.5), 0 0 10px rgba(59,130,246,0.14);
   border: 2px solid rgba(0,0,0,0.12);
   transition: transform .12s ease, box-shadow .12s ease;
+  margin-top: -6px; /* Adjust to center on a 6px effective track */
 }
+input[type=range]::-webkit-slider-runnable-track {
+  height: 6px;
+  -webkit-appearance: none;
+  color: transparent;
+}
+
 
 /* hover / active */
 input[type=range]:hover::-webkit-slider-thumb{ transform: scale(1.08); box-shadow: 0 8px 20px rgba(2,6,23,0.55), 0 0 18px rgba(59,130,246,0.18); }
@@ -251,17 +247,14 @@ input[type=range]:active::-webkit-slider-thumb{ transform: scale(1.12); }
 /* Firefox */
 input[type=range]::-moz-range-track{
   height:6px;
-  background: transparent;
+  background: var(--track-empty);
   border-radius:3px;
 }
-
 input[type=range]::-moz-range-progress{
-  /* firefox uses this pseudo-element for filled portion */
   height:6px;
   border-radius:3px;
-  background: linear-gradient(90deg, var(--accent-c), var(--accent-a), var(--accent-b), var(--accent-d));
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
 }
-
 input[type=range]::-moz-range-thumb{
   width:18px;
   height:18px;
@@ -271,25 +264,9 @@ input[type=range]::-moz-range-thumb{
   box-shadow: 0 6px 14px rgba(2,6,23,0.5);
 }
 
-/* Edge & older browsers fallback: draw a visible track via ::-ms-fill-lower / ::-ms-fill-upper */
-input[type=range]::-ms-track{
-  height:6px;
-  background:transparent;
-  border-color:transparent;
-  color:transparent;
-}
-input[type=range]::-ms-fill-lower{
-  background: linear-gradient(90deg, var(--accent-c), var(--accent-a), var(--accent-b), var(--accent-d));
-  border-radius:3px;
-}
-input[type=range]::-ms-fill-upper{
-  background: var(--track-empty);
-  border-radius:3px;
-}
-
 /* small screens adjustments */
 @media (max-width:640px){
-  .container{ margin:12px; padding:12px; }
+  .container{ margin:12px auto; padding:12px; }
   .piano-container{ height:110px; }
   .wave-wrap{ height:120px; }
   input[type=range]{ height:36px; } /* more comfortable thumb touch area */
