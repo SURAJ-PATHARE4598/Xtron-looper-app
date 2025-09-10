@@ -14,9 +14,9 @@ class MiniSynthNode {
   /**
    * @param {BaseAudioContext} audioContext
    * @param {Object} opts - optional config
-   *   - processorName: name registered in the worklet processor (string)
-   *   - workletUrl: path to the processor module (string). If provided and not loaded, wrapper will addModule.
-   *   - maxVoices: (number) - hint for processor initialization
+   * - processorName: name registered in the worklet processor (string)
+   * - workletUrl: path to the processor module (string). If provided and not loaded, wrapper will addModule.
+   * - maxVoices: (number) - hint for processor initialization
    */
   constructor(audioContext, opts = {}) {
     this.context = audioContext;
@@ -272,4 +272,4 @@ class MiniSynthNode {
 if (typeof window !== 'undefined') {
   window.MiniSynthNode = MiniSynthNode;
 }
-export default MiniSynthNode;
+// FIX: Removed "export default MiniSynthNode;" to prevent SyntaxError with non-module script tag.
