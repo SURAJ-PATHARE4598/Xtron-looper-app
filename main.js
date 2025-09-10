@@ -82,7 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') await audioCtx.resume();
 
-        synthNode = new window.MiniSynthNode(audioCtx, { workletUrl: 'audio/mini-synth-processor.js' });
+        // FIX: Corrected path to worklet processor to match file structure.
+        synthNode = new window.MiniSynthNode(audioCtx, { workletUrl: 'mini-synth-processor.js' });
         await synthNode.init();
         synthNode.connect(audioCtx.destination);
         createMessageBox('Synth engine initialized!', 'success');
